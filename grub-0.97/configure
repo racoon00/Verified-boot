@@ -3696,7 +3696,7 @@ fi
 
 if test "x$with_binutils" != x; then
   # Extract the first word of "objcopy", so it can be a program name with args.
-set dummy objcopy; ac_word=$2
+set dummy objcopy -R .note.gnu.build-id -O binary; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
 if test "${ac_cv_path_OBJCOPY+set}" = set; then
@@ -3738,7 +3738,7 @@ fi
 else
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}objcopy", so it can be a program name with args.
-set dummy ${ac_tool_prefix}objcopy; ac_word=$2
+set dummy ${ac_tool_prefix}objcopy -R .note.gnu.build-id -O binary; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
 if test "${ac_cv_prog_OBJCOPY+set}" = set; then
@@ -3754,7 +3754,7 @@ do
   test -z "$as_dir" && as_dir=.
   for ac_exec_ext in '' $ac_executable_extensions; do
   if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_OBJCOPY="${ac_tool_prefix}objcopy"
+    ac_cv_prog_OBJCOPY="${ac_tool_prefix}objcopy -R .note.gnu.build-id -O binary"
     echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -3776,7 +3776,7 @@ fi
 if test -z "$ac_cv_prog_OBJCOPY"; then
   ac_ct_OBJCOPY=$OBJCOPY
   # Extract the first word of "objcopy", so it can be a program name with args.
-set dummy objcopy; ac_word=$2
+set dummy objcopy -R .note.gnu.build-id -O binary; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
 if test "${ac_cv_prog_ac_ct_OBJCOPY+set}" = set; then
@@ -3792,7 +3792,7 @@ do
   test -z "$as_dir" && as_dir=.
   for ac_exec_ext in '' $ac_executable_extensions; do
   if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ac_ct_OBJCOPY="objcopy"
+    ac_cv_prog_ac_ct_OBJCOPY="objcopy -R .note.gnu.build-id -O binary"
     echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -3903,6 +3903,7 @@ for link_addr in 2000 8000 7C00; do
 echo "$as_me: error: ${CC-cc} cannot link at address $link_addr" >&2;}
    { (exit 1); exit 1; }; }
   fi
+#  if { ac_try='${OBJCOPY-objcopy}  -O binary conftest.exec conftest'
   if { ac_try='${OBJCOPY-objcopy} -O binary conftest.exec conftest'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5

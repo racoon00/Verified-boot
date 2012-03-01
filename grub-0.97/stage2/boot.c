@@ -20,22 +20,146 @@
 
 
 #include "shared.h"
-
+#include "sha.h"
 #include "freebsd.h"
 #include "imgact_aout.h"
 #include "i386-elf.h"
+extern void hash_calculate(char *filename,uint8_t sha1_result[]);
 
+#define SUPPORT_VERIFIED_BOOT 1
 static int cur_addr;
 entry_func entry_addr;
 static struct mod_list mll[99];
 static int linux_mem_size;
+/*Enable/disable the log flag */
+#define debuglog 0
+#ifdef SUPPORT_VERIFIED_BOOT
+/*Main parsing function of testfile(whose entry is there in menu.lst)
+ * which has got list of hash and file path whose
+ * shasum needs to be calculated.The calculated shasum is compared with 
+ * the shasum in testfile.
+ * If equal return 0 else 1
+ * Test file can contain multiple hash entry and the file associated with that hash
+ */
+int loadcheckfile(char *filename){
+	#if debuglog 
+	printf("Enter loadcheckfile function ===\n");
+	#endif
+	char HashValue[41];
+	char checkfile[1024];
 
+	int fp;
+	int i=0;
+	/*Open the testfile */
+	fp=grub_open(filename);
+	/*Read tesfile data into input buffer */
+	char buf[8192]; 
+	#if debuglog
+	if(!fp)
+	{
+	printf("Error Reading checkfile\n");
+	}
+	#endif
+	/*length of the file*/
+	int maxlen=filemax;
+	#if debuglog
+	printf("Maxlen==%d\n",maxlen);
+	#endif
+	/*read the data into buf*/
+	grub_read(buf,maxlen);
+	/*Close the file*/
+	grub_close();
+	int hashfine;
+	/*Flag for checking whether the hash is fine 
+ 	 *till now while reading the data from buf*/
+	hashfine=1;
+	int cur=0;
+	while(cur<maxlen)
+	{
+	#if debuglog
+	printf("Enter while loadcheckfile  ===\n");
+	#endif
+	/*Read the first 40 bytes and store it in the hashvalue*/
+	for(i=0;i<40;i++)
+	{
+	HashValue[i]=buf[i];
+	#if debuglog
+	printf("HashValue[%d]==%c\t",i,HashValue[i]);
+	#endif
+	cur++;
+	}
+	HashValue[40]='\0';
+  /*Read the rest i.e checkfile path into checkfile */	
+	//cur++;
+	#if debuglog
+	printf("Buffer[%d]==%c\t",cur,buf[cur]);
+	#endif
+  /*Check for file format */	
+	if(buf[cur]!=' ')
+	{
+	#if debuglog
+	grub_printf("File format not correct\n");
+	#endif
+	return 1;
+	}
+	cur++;
+	i=0;
+	while(1)
+	{
+	if(buf[cur]=='\n')
+	{
+	cur++;
+	checkfile[i]='\0';
+	#if debuglog
+	grub_printf("checkfile==%s\n",checkfile);
+	#endif
+	break;
+ 	}
+	checkfile[i]=buf[cur];
+	cur++;
+	i++;
+
+	if(i>1023)
+	{
+	#if debuglog
+	grub_printf("Filename too long and terminate here\n");
+	#endif
+  return 1;	
+	}	
+	}
+	char shasum[41];
+	/*Calculate the shasum of checkfile and store it in shasum*/
+	hash_calculate(checkfile,shasum);
+  #if debuglog
+	printf("shasum of the file==%s\n",shasum);
+  #endif
+	if(grub_strcmp(shasum,HashValue)==0)
+	{
+	#if debuglog
+	printf("Hash equal continue booting\n");
+	#endif
+	hashfine=1;
+	}
+	else
+	{
+	#if debuglog
+	printf("Hash Value not equal\n");
+	#endif
+	hashfine=0;
+	return 1;
+	}
+/*continue till the hash is fine */
+}
+return 0;
+}
+#endif
 /*
- *  The next two functions, 'load_image' and 'load_module', are the building
- *  blocks of the multiboot loader component.  They handle essentially all
- *  of the gory details of loading in a bootable image and the modules.
+ *    The next two functions, 'load_image' and 'load_module', are the building
+ *     blocks of the multiboot loader component.  They handle essentially all
+ *     of the gory details of loading in a bootable image and the modules.
  */
 
+ 
 kernel_t
 load_image (char *kernel, char *arg, kernel_t suggested_type,
 	    unsigned long load_flags)

@@ -979,7 +979,7 @@ void bsd_boot (kernel_t type, int bootdev, char *arg)
 /* Define flags for load_image here.  */
 /* Don't pass a Linux's mem option automatically.  */
 #define KERNEL_LOAD_NO_MEM_OPTION	(1 << 0)
-
+int loadcheckfile(char *filename);
 kernel_t load_image (char *kernel, char *arg, kernel_t suggested_type,
 		     unsigned long load_flags);
 

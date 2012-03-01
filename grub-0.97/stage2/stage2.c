@@ -19,7 +19,7 @@
 
 #include <shared.h>
 #include <term.h>
-
+#define debuglog 0
 grub_jmp_buf restart_env;
 
 #if defined(PRESET_MENU_STRING) || defined(SUPPORT_DISKLESS)
@@ -233,7 +233,6 @@ run_menu (char *menu_entries, char *config_entries, int num_entries,
 {
   int c, time1, time2 = -1, first_entry = 0;
   char *cur_entry = 0;
-
   /*
    *  Main loop for menu UI.
    */
@@ -711,19 +710,27 @@ restart:
   /* Attempt to boot an entry.  */
   
  boot_entry:
-  
+ 
   cls ();
   setcursor (1);
   
   while (1)
     {
       if (config_entries)
+	{
+	#if debuglog
 	printf ("  Booting \'%s\'\n\n",
 		get_entry (menu_entries, first_entry + entryno, 0));
+  #endif	
+	}
       else
+	{
+	#if debuglog
 	printf ("  Booting command-list\n\n");
-
-      if (! cur_entry)
+	#endif
+	}
+		  
+    if (! cur_entry)
 	cur_entry = get_entry (config_entries, first_entry + entryno, 1);
 
       /* Set CURRENT_ENTRYNO for the command "savedefault".  */
