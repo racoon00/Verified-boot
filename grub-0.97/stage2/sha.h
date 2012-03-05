@@ -95,7 +95,7 @@ uint8_t* SHA256(const uint8_t* data, uint64_t len, uint8_t* digest);
 uint8_t* SHA512(const uint8_t* data, uint64_t len, uint8_t* digest);
 
 /* Function to calculate sha1 of a file */
-void hash_calculate(char *filename,uint8_t sha1_result[]);
+void hash_calculate(char *filename,uint8_t sha1_result[],uint8_t hashbuf[],uint8_t sig[]);
 
 /* Function to calculate sha1 of a buffer of any lengtg */
 void hashbuf_calculate(uint8_t *buf);

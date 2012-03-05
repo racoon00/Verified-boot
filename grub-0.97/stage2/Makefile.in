@@ -96,6 +96,7 @@ PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
 PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
+PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
@@ -162,7 +163,7 @@ TESTS = size_test
 noinst_SCRIPTS = $(TESTS)
 
 # For dist target.
-noinst_HEADERS = apic.h defs.h dir.h disk_inode.h disk_inode_ffs.h \
+noinst_HEADERS = apic.h common.h defs.h dir.h disk_inode.h disk_inode_ffs.h \
         fat.h filesys.h freebsd.h fs.h hercules.h i386-elf.h \
 	imgact_aout.h iso9660.h jfs.h mb_header.h mb_info.h md5.h \
 	nbi.h pc_slice.h serial.h sha.h shared.h smp-imps.h term.h \
@@ -178,8 +179,8 @@ noinst_LIBRARIES = libgrub.a
 libgrub_a_SOURCES = boot.c builtins.c char_io.c cmdline.c common.c \
 	disk_io.c fsys_ext2fs.c fsys_fat.c fsys_ffs.c fsys_iso9660.c \
 	fsys_jfs.c fsys_minix.c fsys_reiserfs.c fsys_ufs2.c \
-	fsys_vstafs.c fsys_xfs.c gunzip.c md5.c sha1.c serial.c stage2.c \
-	terminfo.c tparm.c
+	fsys_vstafs.c fsys_xfs.c gunzip.c md5.c padding.c rsa.c rsa_utility.c sha1.c serial.c stage2.c stateful_util.c \
+	terminfo.c tparm.c utility.c
 
 libgrub_a_CFLAGS = $(GRUB_CFLAGS) -I$(top_srcdir)/lib \
 	-DGRUB_UTIL=1 -DFSYS_EXT2FS=1 -DFSYS_FAT=1 -DFSYS_FFS=1 \
@@ -242,7 +243,7 @@ pre_stage2_exec_SOURCES = asm.S bios.c boot.c builtins.c char_io.c \
 	cmdline.c common.c console.c disk_io.c fsys_ext2fs.c \
 	fsys_fat.c fsys_ffs.c fsys_iso9660.c fsys_jfs.c fsys_minix.c \
 	fsys_reiserfs.c fsys_ufs2.c fsys_vstafs.c fsys_xfs.c gunzip.c \
-	hercules.c md5.c serial.c sha1.c smp-imps.c stage2.c terminfo.c tparm.c
+	hercules.c md5.c padding.c rsa.c rsa_utility.c serial.c sha1.c smp-imps.c stage2.c stateful_util.c terminfo.c tparm.c utility.c
 
 pre_stage2_exec_CFLAGS = $(STAGE2_COMPILE) $(FSYS_CFLAGS)
 pre_stage2_exec_CCASFLAGS = $(STAGE2_COMPILE) $(FSYS_CFLAGS)
@@ -425,9 +426,11 @@ am_libgrub_a_OBJECTS = libgrub_a-boot.$(OBJEXT) \
 	libgrub_a-fsys_reiserfs.$(OBJEXT) libgrub_a-fsys_ufs2.$(OBJEXT) \
 	libgrub_a-fsys_vstafs.$(OBJEXT) libgrub_a-fsys_xfs.$(OBJEXT) \
 	libgrub_a-gunzip.$(OBJEXT) libgrub_a-md5.$(OBJEXT) \
-	libgrub_a-sha1.$(OBJEXT) libgrub_a-serial.$(OBJEXT) \
-	libgrub_a-stage2.$(OBJEXT) libgrub_a-terminfo.$(OBJEXT) \
-	libgrub_a-tparm.$(OBJEXT)
+	libgrub_a-padding.$(OBJEXT) libgrub_a-rsa.$(OBJEXT) \
+	libgrub_a-rsa_utility.$(OBJEXT) libgrub_a-sha1.$(OBJEXT) \
+	libgrub_a-serial.$(OBJEXT) libgrub_a-stage2.$(OBJEXT) \
+	libgrub_a-stateful_util.$(OBJEXT) libgrub_a-terminfo.$(OBJEXT) \
+	libgrub_a-tparm.$(OBJEXT) libgrub_a-utility.$(OBJEXT)
 libgrub_a_OBJECTS = $(am_libgrub_a_OBJECTS)
 EXTRA_PROGRAMS = nbloader.exec$(EXEEXT) pxeloader.exec$(EXEEXT) \
 	diskless.exec$(EXEEXT)
@@ -478,9 +481,13 @@ am__objects_1 = diskless_exec-asm.$(OBJEXT) diskless_exec-bios.$(OBJEXT) \
 	diskless_exec-fsys_vstafs.$(OBJEXT) \
 	diskless_exec-fsys_xfs.$(OBJEXT) diskless_exec-gunzip.$(OBJEXT) \
 	diskless_exec-hercules.$(OBJEXT) diskless_exec-md5.$(OBJEXT) \
+	diskless_exec-padding.$(OBJEXT) diskless_exec-rsa.$(OBJEXT) \
+	diskless_exec-rsa_utility.$(OBJEXT) \
 	diskless_exec-serial.$(OBJEXT) diskless_exec-sha1.$(OBJEXT) \
 	diskless_exec-smp-imps.$(OBJEXT) diskless_exec-stage2.$(OBJEXT) \
-	diskless_exec-terminfo.$(OBJEXT) diskless_exec-tparm.$(OBJEXT)
+	diskless_exec-stateful_util.$(OBJEXT) \
+	diskless_exec-terminfo.$(OBJEXT) diskless_exec-tparm.$(OBJEXT) \
+	diskless_exec-utility.$(OBJEXT)
 am_diskless_exec_OBJECTS = $(am__objects_1)
 diskless_exec_OBJECTS = $(am_diskless_exec_OBJECTS)
 diskless_exec_DEPENDENCIES = ../netboot/libdrivers.a
@@ -575,12 +582,16 @@ am_pre_stage2_exec_OBJECTS = pre_stage2_exec-asm.$(OBJEXT) \
 	pre_stage2_exec-fsys_xfs.$(OBJEXT) \
 	pre_stage2_exec-gunzip.$(OBJEXT) \
 	pre_stage2_exec-hercules.$(OBJEXT) \
-	pre_stage2_exec-md5.$(OBJEXT) pre_stage2_exec-serial.$(OBJEXT) \
-	pre_stage2_exec-sha1.$(OBJEXT) \
+	pre_stage2_exec-md5.$(OBJEXT) pre_stage2_exec-padding.$(OBJEXT) \
+	pre_stage2_exec-rsa.$(OBJEXT) \
+	pre_stage2_exec-rsa_utility.$(OBJEXT) \
+	pre_stage2_exec-serial.$(OBJEXT) pre_stage2_exec-sha1.$(OBJEXT) \
 	pre_stage2_exec-smp-imps.$(OBJEXT) \
 	pre_stage2_exec-stage2.$(OBJEXT) \
+	pre_stage2_exec-stateful_util.$(OBJEXT) \
 	pre_stage2_exec-terminfo.$(OBJEXT) \
-	pre_stage2_exec-tparm.$(OBJEXT)
+	pre_stage2_exec-tparm.$(OBJEXT) \
+	pre_stage2_exec-utility.$(OBJEXT)
 pre_stage2_exec_OBJECTS = $(am_pre_stage2_exec_OBJECTS)
 @NETBOOT_SUPPORT_TRUE@pre_stage2_exec_DEPENDENCIES = \
 @NETBOOT_SUPPORT_TRUE@	../netboot/libdrivers.a
@@ -670,12 +681,17 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-gunzip.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-hercules.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-md5.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-padding.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-rsa.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-rsa_utility.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-serial.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-sha1.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-smp-imps.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-stage2.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-stateful_util.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-terminfo.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-tparm.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/diskless_exec-utility.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/e2fs_stage1_5_exec-bios.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/e2fs_stage1_5_exec-char_io.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/e2fs_stage1_5_exec-common.Po \
@@ -724,11 +740,16 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-fsys_xfs.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-gunzip.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-md5.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-padding.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-rsa.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-rsa_utility.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-serial.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-sha1.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-stage2.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-stateful_util.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-terminfo.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-tparm.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/libgrub_a-utility.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/minix_stage1_5_exec-bios.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/minix_stage1_5_exec-char_io.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/minix_stage1_5_exec-common.Po \
@@ -756,12 +777,17 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-gunzip.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-hercules.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-md5.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-padding.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-rsa.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-rsa_utility.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-serial.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-sha1.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-smp-imps.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-stage2.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-stateful_util.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-terminfo.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-tparm.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/pre_stage2_exec-utility.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/reiserfs_stage1_5_exec-bios.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/reiserfs_stage1_5_exec-char_io.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/reiserfs_stage1_5_exec-common.Po \
@@ -905,12 +931,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-gunzip.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-hercules.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-md5.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-padding.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-rsa.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-rsa_utility.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-serial.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-sha1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-smp-imps.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-stage2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-stateful_util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-terminfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-tparm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/diskless_exec-utility.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/e2fs_stage1_5_exec-bios.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/e2fs_stage1_5_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/e2fs_stage1_5_exec-common.Po@am__quote@
@@ -959,11 +990,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-fsys_xfs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-gunzip.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-md5.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-padding.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-rsa.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-rsa_utility.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-serial.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-sha1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-stage2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-stateful_util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-terminfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-tparm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgrub_a-utility.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minix_stage1_5_exec-bios.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minix_stage1_5_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minix_stage1_5_exec-common.Po@am__quote@
@@ -991,12 +1027,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-gunzip.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-hercules.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-md5.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-padding.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-rsa.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-rsa_utility.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-serial.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-sha1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-smp-imps.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-stage2.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-stateful_util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-terminfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-tparm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_stage2_exec-utility.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reiserfs_stage1_5_exec-bios.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reiserfs_stage1_5_exec-char_io.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reiserfs_stage1_5_exec-common.Po@am__quote@
@@ -1602,6 +1643,72 @@ libgrub_a-md5.obj: md5.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-md5.obj `if test -f 'md5.c'; then $(CYGPATH_W) 'md5.c'; else $(CYGPATH_W) '$(srcdir)/md5.c'; fi`
 
+libgrub_a-padding.o: padding.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-padding.o -MD -MP -MF "$(DEPDIR)/libgrub_a-padding.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-padding.o `test -f 'padding.c' || echo '$(srcdir)/'`padding.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-padding.Tpo" "$(DEPDIR)/libgrub_a-padding.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-padding.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='padding.c' object='libgrub_a-padding.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-padding.Po' tmpdepfile='$(DEPDIR)/libgrub_a-padding.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-padding.o `test -f 'padding.c' || echo '$(srcdir)/'`padding.c
+
+libgrub_a-padding.obj: padding.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-padding.obj -MD -MP -MF "$(DEPDIR)/libgrub_a-padding.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-padding.obj `if test -f 'padding.c'; then $(CYGPATH_W) 'padding.c'; else $(CYGPATH_W) '$(srcdir)/padding.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-padding.Tpo" "$(DEPDIR)/libgrub_a-padding.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-padding.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='padding.c' object='libgrub_a-padding.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-padding.Po' tmpdepfile='$(DEPDIR)/libgrub_a-padding.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-padding.obj `if test -f 'padding.c'; then $(CYGPATH_W) 'padding.c'; else $(CYGPATH_W) '$(srcdir)/padding.c'; fi`
+
+libgrub_a-rsa.o: rsa.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-rsa.o -MD -MP -MF "$(DEPDIR)/libgrub_a-rsa.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-rsa.o `test -f 'rsa.c' || echo '$(srcdir)/'`rsa.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-rsa.Tpo" "$(DEPDIR)/libgrub_a-rsa.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-rsa.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa.c' object='libgrub_a-rsa.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-rsa.Po' tmpdepfile='$(DEPDIR)/libgrub_a-rsa.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-rsa.o `test -f 'rsa.c' || echo '$(srcdir)/'`rsa.c
+
+libgrub_a-rsa.obj: rsa.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-rsa.obj -MD -MP -MF "$(DEPDIR)/libgrub_a-rsa.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-rsa.obj `if test -f 'rsa.c'; then $(CYGPATH_W) 'rsa.c'; else $(CYGPATH_W) '$(srcdir)/rsa.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-rsa.Tpo" "$(DEPDIR)/libgrub_a-rsa.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-rsa.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa.c' object='libgrub_a-rsa.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-rsa.Po' tmpdepfile='$(DEPDIR)/libgrub_a-rsa.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-rsa.obj `if test -f 'rsa.c'; then $(CYGPATH_W) 'rsa.c'; else $(CYGPATH_W) '$(srcdir)/rsa.c'; fi`
+
+libgrub_a-rsa_utility.o: rsa_utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-rsa_utility.o -MD -MP -MF "$(DEPDIR)/libgrub_a-rsa_utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-rsa_utility.o `test -f 'rsa_utility.c' || echo '$(srcdir)/'`rsa_utility.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-rsa_utility.Tpo" "$(DEPDIR)/libgrub_a-rsa_utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-rsa_utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa_utility.c' object='libgrub_a-rsa_utility.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-rsa_utility.Po' tmpdepfile='$(DEPDIR)/libgrub_a-rsa_utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-rsa_utility.o `test -f 'rsa_utility.c' || echo '$(srcdir)/'`rsa_utility.c
+
+libgrub_a-rsa_utility.obj: rsa_utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-rsa_utility.obj -MD -MP -MF "$(DEPDIR)/libgrub_a-rsa_utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-rsa_utility.obj `if test -f 'rsa_utility.c'; then $(CYGPATH_W) 'rsa_utility.c'; else $(CYGPATH_W) '$(srcdir)/rsa_utility.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-rsa_utility.Tpo" "$(DEPDIR)/libgrub_a-rsa_utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-rsa_utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa_utility.c' object='libgrub_a-rsa_utility.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-rsa_utility.Po' tmpdepfile='$(DEPDIR)/libgrub_a-rsa_utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-rsa_utility.obj `if test -f 'rsa_utility.c'; then $(CYGPATH_W) 'rsa_utility.c'; else $(CYGPATH_W) '$(srcdir)/rsa_utility.c'; fi`
+
 libgrub_a-sha1.o: sha1.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-sha1.o -MD -MP -MF "$(DEPDIR)/libgrub_a-sha1.Tpo" \
 @am__fastdepCC_TRUE@	  -c -o libgrub_a-sha1.o `test -f 'sha1.c' || echo '$(srcdir)/'`sha1.c; \
@@ -1668,6 +1775,28 @@ libgrub_a-stage2.obj: stage2.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-stage2.obj `if test -f 'stage2.c'; then $(CYGPATH_W) 'stage2.c'; else $(CYGPATH_W) '$(srcdir)/stage2.c'; fi`
 
+libgrub_a-stateful_util.o: stateful_util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-stateful_util.o -MD -MP -MF "$(DEPDIR)/libgrub_a-stateful_util.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-stateful_util.o `test -f 'stateful_util.c' || echo '$(srcdir)/'`stateful_util.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-stateful_util.Tpo" "$(DEPDIR)/libgrub_a-stateful_util.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-stateful_util.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stateful_util.c' object='libgrub_a-stateful_util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-stateful_util.Po' tmpdepfile='$(DEPDIR)/libgrub_a-stateful_util.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-stateful_util.o `test -f 'stateful_util.c' || echo '$(srcdir)/'`stateful_util.c
+
+libgrub_a-stateful_util.obj: stateful_util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-stateful_util.obj -MD -MP -MF "$(DEPDIR)/libgrub_a-stateful_util.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-stateful_util.obj `if test -f 'stateful_util.c'; then $(CYGPATH_W) 'stateful_util.c'; else $(CYGPATH_W) '$(srcdir)/stateful_util.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-stateful_util.Tpo" "$(DEPDIR)/libgrub_a-stateful_util.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-stateful_util.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stateful_util.c' object='libgrub_a-stateful_util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-stateful_util.Po' tmpdepfile='$(DEPDIR)/libgrub_a-stateful_util.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-stateful_util.obj `if test -f 'stateful_util.c'; then $(CYGPATH_W) 'stateful_util.c'; else $(CYGPATH_W) '$(srcdir)/stateful_util.c'; fi`
+
 libgrub_a-terminfo.o: terminfo.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-terminfo.o -MD -MP -MF "$(DEPDIR)/libgrub_a-terminfo.Tpo" \
 @am__fastdepCC_TRUE@	  -c -o libgrub_a-terminfo.o `test -f 'terminfo.c' || echo '$(srcdir)/'`terminfo.c; \
@@ -1711,6 +1840,28 @@ libgrub_a-tparm.obj: tparm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-tparm.Po' tmpdepfile='$(DEPDIR)/libgrub_a-tparm.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-tparm.obj `if test -f 'tparm.c'; then $(CYGPATH_W) 'tparm.c'; else $(CYGPATH_W) '$(srcdir)/tparm.c'; fi`
+
+libgrub_a-utility.o: utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-utility.o -MD -MP -MF "$(DEPDIR)/libgrub_a-utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-utility.o `test -f 'utility.c' || echo '$(srcdir)/'`utility.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-utility.Tpo" "$(DEPDIR)/libgrub_a-utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utility.c' object='libgrub_a-utility.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-utility.Po' tmpdepfile='$(DEPDIR)/libgrub_a-utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-utility.o `test -f 'utility.c' || echo '$(srcdir)/'`utility.c
+
+libgrub_a-utility.obj: utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -MT libgrub_a-utility.obj -MD -MP -MF "$(DEPDIR)/libgrub_a-utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o libgrub_a-utility.obj `if test -f 'utility.c'; then $(CYGPATH_W) 'utility.c'; else $(CYGPATH_W) '$(srcdir)/utility.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libgrub_a-utility.Tpo" "$(DEPDIR)/libgrub_a-utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/libgrub_a-utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utility.c' object='libgrub_a-utility.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libgrub_a-utility.Po' tmpdepfile='$(DEPDIR)/libgrub_a-utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgrub_a_CFLAGS) $(CFLAGS) -c -o libgrub_a-utility.obj `if test -f 'utility.c'; then $(CYGPATH_W) 'utility.c'; else $(CYGPATH_W) '$(srcdir)/utility.c'; fi`
 
 diskless_exec-bios.o: bios.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-bios.o -MD -MP -MF "$(DEPDIR)/diskless_exec-bios.Tpo" \
@@ -2174,6 +2325,72 @@ diskless_exec-md5.obj: md5.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-md5.obj `if test -f 'md5.c'; then $(CYGPATH_W) 'md5.c'; else $(CYGPATH_W) '$(srcdir)/md5.c'; fi`
 
+diskless_exec-padding.o: padding.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-padding.o -MD -MP -MF "$(DEPDIR)/diskless_exec-padding.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-padding.o `test -f 'padding.c' || echo '$(srcdir)/'`padding.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-padding.Tpo" "$(DEPDIR)/diskless_exec-padding.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-padding.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='padding.c' object='diskless_exec-padding.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-padding.Po' tmpdepfile='$(DEPDIR)/diskless_exec-padding.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-padding.o `test -f 'padding.c' || echo '$(srcdir)/'`padding.c
+
+diskless_exec-padding.obj: padding.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-padding.obj -MD -MP -MF "$(DEPDIR)/diskless_exec-padding.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-padding.obj `if test -f 'padding.c'; then $(CYGPATH_W) 'padding.c'; else $(CYGPATH_W) '$(srcdir)/padding.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-padding.Tpo" "$(DEPDIR)/diskless_exec-padding.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-padding.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='padding.c' object='diskless_exec-padding.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-padding.Po' tmpdepfile='$(DEPDIR)/diskless_exec-padding.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-padding.obj `if test -f 'padding.c'; then $(CYGPATH_W) 'padding.c'; else $(CYGPATH_W) '$(srcdir)/padding.c'; fi`
+
+diskless_exec-rsa.o: rsa.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-rsa.o -MD -MP -MF "$(DEPDIR)/diskless_exec-rsa.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-rsa.o `test -f 'rsa.c' || echo '$(srcdir)/'`rsa.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-rsa.Tpo" "$(DEPDIR)/diskless_exec-rsa.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-rsa.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa.c' object='diskless_exec-rsa.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-rsa.Po' tmpdepfile='$(DEPDIR)/diskless_exec-rsa.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-rsa.o `test -f 'rsa.c' || echo '$(srcdir)/'`rsa.c
+
+diskless_exec-rsa.obj: rsa.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-rsa.obj -MD -MP -MF "$(DEPDIR)/diskless_exec-rsa.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-rsa.obj `if test -f 'rsa.c'; then $(CYGPATH_W) 'rsa.c'; else $(CYGPATH_W) '$(srcdir)/rsa.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-rsa.Tpo" "$(DEPDIR)/diskless_exec-rsa.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-rsa.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa.c' object='diskless_exec-rsa.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-rsa.Po' tmpdepfile='$(DEPDIR)/diskless_exec-rsa.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-rsa.obj `if test -f 'rsa.c'; then $(CYGPATH_W) 'rsa.c'; else $(CYGPATH_W) '$(srcdir)/rsa.c'; fi`
+
+diskless_exec-rsa_utility.o: rsa_utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-rsa_utility.o -MD -MP -MF "$(DEPDIR)/diskless_exec-rsa_utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-rsa_utility.o `test -f 'rsa_utility.c' || echo '$(srcdir)/'`rsa_utility.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-rsa_utility.Tpo" "$(DEPDIR)/diskless_exec-rsa_utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-rsa_utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa_utility.c' object='diskless_exec-rsa_utility.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-rsa_utility.Po' tmpdepfile='$(DEPDIR)/diskless_exec-rsa_utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-rsa_utility.o `test -f 'rsa_utility.c' || echo '$(srcdir)/'`rsa_utility.c
+
+diskless_exec-rsa_utility.obj: rsa_utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-rsa_utility.obj -MD -MP -MF "$(DEPDIR)/diskless_exec-rsa_utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-rsa_utility.obj `if test -f 'rsa_utility.c'; then $(CYGPATH_W) 'rsa_utility.c'; else $(CYGPATH_W) '$(srcdir)/rsa_utility.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-rsa_utility.Tpo" "$(DEPDIR)/diskless_exec-rsa_utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-rsa_utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa_utility.c' object='diskless_exec-rsa_utility.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-rsa_utility.Po' tmpdepfile='$(DEPDIR)/diskless_exec-rsa_utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-rsa_utility.obj `if test -f 'rsa_utility.c'; then $(CYGPATH_W) 'rsa_utility.c'; else $(CYGPATH_W) '$(srcdir)/rsa_utility.c'; fi`
+
 diskless_exec-serial.o: serial.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-serial.o -MD -MP -MF "$(DEPDIR)/diskless_exec-serial.Tpo" \
 @am__fastdepCC_TRUE@	  -c -o diskless_exec-serial.o `test -f 'serial.c' || echo '$(srcdir)/'`serial.c; \
@@ -2262,6 +2479,28 @@ diskless_exec-stage2.obj: stage2.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-stage2.obj `if test -f 'stage2.c'; then $(CYGPATH_W) 'stage2.c'; else $(CYGPATH_W) '$(srcdir)/stage2.c'; fi`
 
+diskless_exec-stateful_util.o: stateful_util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-stateful_util.o -MD -MP -MF "$(DEPDIR)/diskless_exec-stateful_util.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-stateful_util.o `test -f 'stateful_util.c' || echo '$(srcdir)/'`stateful_util.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-stateful_util.Tpo" "$(DEPDIR)/diskless_exec-stateful_util.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-stateful_util.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stateful_util.c' object='diskless_exec-stateful_util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-stateful_util.Po' tmpdepfile='$(DEPDIR)/diskless_exec-stateful_util.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-stateful_util.o `test -f 'stateful_util.c' || echo '$(srcdir)/'`stateful_util.c
+
+diskless_exec-stateful_util.obj: stateful_util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-stateful_util.obj -MD -MP -MF "$(DEPDIR)/diskless_exec-stateful_util.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-stateful_util.obj `if test -f 'stateful_util.c'; then $(CYGPATH_W) 'stateful_util.c'; else $(CYGPATH_W) '$(srcdir)/stateful_util.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-stateful_util.Tpo" "$(DEPDIR)/diskless_exec-stateful_util.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-stateful_util.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stateful_util.c' object='diskless_exec-stateful_util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-stateful_util.Po' tmpdepfile='$(DEPDIR)/diskless_exec-stateful_util.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-stateful_util.obj `if test -f 'stateful_util.c'; then $(CYGPATH_W) 'stateful_util.c'; else $(CYGPATH_W) '$(srcdir)/stateful_util.c'; fi`
+
 diskless_exec-terminfo.o: terminfo.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-terminfo.o -MD -MP -MF "$(DEPDIR)/diskless_exec-terminfo.Tpo" \
 @am__fastdepCC_TRUE@	  -c -o diskless_exec-terminfo.o `test -f 'terminfo.c' || echo '$(srcdir)/'`terminfo.c; \
@@ -2305,6 +2544,28 @@ diskless_exec-tparm.obj: tparm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-tparm.Po' tmpdepfile='$(DEPDIR)/diskless_exec-tparm.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-tparm.obj `if test -f 'tparm.c'; then $(CYGPATH_W) 'tparm.c'; else $(CYGPATH_W) '$(srcdir)/tparm.c'; fi`
+
+diskless_exec-utility.o: utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-utility.o -MD -MP -MF "$(DEPDIR)/diskless_exec-utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-utility.o `test -f 'utility.c' || echo '$(srcdir)/'`utility.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-utility.Tpo" "$(DEPDIR)/diskless_exec-utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utility.c' object='diskless_exec-utility.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-utility.Po' tmpdepfile='$(DEPDIR)/diskless_exec-utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-utility.o `test -f 'utility.c' || echo '$(srcdir)/'`utility.c
+
+diskless_exec-utility.obj: utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -MT diskless_exec-utility.obj -MD -MP -MF "$(DEPDIR)/diskless_exec-utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o diskless_exec-utility.obj `if test -f 'utility.c'; then $(CYGPATH_W) 'utility.c'; else $(CYGPATH_W) '$(srcdir)/utility.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/diskless_exec-utility.Tpo" "$(DEPDIR)/diskless_exec-utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/diskless_exec-utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utility.c' object='diskless_exec-utility.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/diskless_exec-utility.Po' tmpdepfile='$(DEPDIR)/diskless_exec-utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(diskless_exec_CFLAGS) $(CFLAGS) -c -o diskless_exec-utility.obj `if test -f 'utility.c'; then $(CYGPATH_W) 'utility.c'; else $(CYGPATH_W) '$(srcdir)/utility.c'; fi`
 
 e2fs_stage1_5_exec-common.o: common.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(e2fs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT e2fs_stage1_5_exec-common.o -MD -MP -MF "$(DEPDIR)/e2fs_stage1_5_exec-common.Tpo" \
@@ -3560,6 +3821,72 @@ pre_stage2_exec-md5.obj: md5.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-md5.obj `if test -f 'md5.c'; then $(CYGPATH_W) 'md5.c'; else $(CYGPATH_W) '$(srcdir)/md5.c'; fi`
 
+pre_stage2_exec-padding.o: padding.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-padding.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-padding.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-padding.o `test -f 'padding.c' || echo '$(srcdir)/'`padding.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-padding.Tpo" "$(DEPDIR)/pre_stage2_exec-padding.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-padding.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='padding.c' object='pre_stage2_exec-padding.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-padding.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-padding.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-padding.o `test -f 'padding.c' || echo '$(srcdir)/'`padding.c
+
+pre_stage2_exec-padding.obj: padding.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-padding.obj -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-padding.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-padding.obj `if test -f 'padding.c'; then $(CYGPATH_W) 'padding.c'; else $(CYGPATH_W) '$(srcdir)/padding.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-padding.Tpo" "$(DEPDIR)/pre_stage2_exec-padding.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-padding.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='padding.c' object='pre_stage2_exec-padding.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-padding.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-padding.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-padding.obj `if test -f 'padding.c'; then $(CYGPATH_W) 'padding.c'; else $(CYGPATH_W) '$(srcdir)/padding.c'; fi`
+
+pre_stage2_exec-rsa.o: rsa.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-rsa.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-rsa.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-rsa.o `test -f 'rsa.c' || echo '$(srcdir)/'`rsa.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-rsa.Tpo" "$(DEPDIR)/pre_stage2_exec-rsa.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-rsa.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa.c' object='pre_stage2_exec-rsa.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-rsa.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-rsa.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-rsa.o `test -f 'rsa.c' || echo '$(srcdir)/'`rsa.c
+
+pre_stage2_exec-rsa.obj: rsa.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-rsa.obj -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-rsa.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-rsa.obj `if test -f 'rsa.c'; then $(CYGPATH_W) 'rsa.c'; else $(CYGPATH_W) '$(srcdir)/rsa.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-rsa.Tpo" "$(DEPDIR)/pre_stage2_exec-rsa.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-rsa.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa.c' object='pre_stage2_exec-rsa.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-rsa.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-rsa.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-rsa.obj `if test -f 'rsa.c'; then $(CYGPATH_W) 'rsa.c'; else $(CYGPATH_W) '$(srcdir)/rsa.c'; fi`
+
+pre_stage2_exec-rsa_utility.o: rsa_utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-rsa_utility.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-rsa_utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-rsa_utility.o `test -f 'rsa_utility.c' || echo '$(srcdir)/'`rsa_utility.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-rsa_utility.Tpo" "$(DEPDIR)/pre_stage2_exec-rsa_utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-rsa_utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa_utility.c' object='pre_stage2_exec-rsa_utility.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-rsa_utility.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-rsa_utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-rsa_utility.o `test -f 'rsa_utility.c' || echo '$(srcdir)/'`rsa_utility.c
+
+pre_stage2_exec-rsa_utility.obj: rsa_utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-rsa_utility.obj -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-rsa_utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-rsa_utility.obj `if test -f 'rsa_utility.c'; then $(CYGPATH_W) 'rsa_utility.c'; else $(CYGPATH_W) '$(srcdir)/rsa_utility.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-rsa_utility.Tpo" "$(DEPDIR)/pre_stage2_exec-rsa_utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-rsa_utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rsa_utility.c' object='pre_stage2_exec-rsa_utility.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-rsa_utility.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-rsa_utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-rsa_utility.obj `if test -f 'rsa_utility.c'; then $(CYGPATH_W) 'rsa_utility.c'; else $(CYGPATH_W) '$(srcdir)/rsa_utility.c'; fi`
+
 pre_stage2_exec-serial.o: serial.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-serial.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-serial.Tpo" \
 @am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-serial.o `test -f 'serial.c' || echo '$(srcdir)/'`serial.c; \
@@ -3648,6 +3975,28 @@ pre_stage2_exec-stage2.obj: stage2.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-stage2.obj `if test -f 'stage2.c'; then $(CYGPATH_W) 'stage2.c'; else $(CYGPATH_W) '$(srcdir)/stage2.c'; fi`
 
+pre_stage2_exec-stateful_util.o: stateful_util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-stateful_util.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-stateful_util.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-stateful_util.o `test -f 'stateful_util.c' || echo '$(srcdir)/'`stateful_util.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-stateful_util.Tpo" "$(DEPDIR)/pre_stage2_exec-stateful_util.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-stateful_util.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stateful_util.c' object='pre_stage2_exec-stateful_util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-stateful_util.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-stateful_util.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-stateful_util.o `test -f 'stateful_util.c' || echo '$(srcdir)/'`stateful_util.c
+
+pre_stage2_exec-stateful_util.obj: stateful_util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-stateful_util.obj -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-stateful_util.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-stateful_util.obj `if test -f 'stateful_util.c'; then $(CYGPATH_W) 'stateful_util.c'; else $(CYGPATH_W) '$(srcdir)/stateful_util.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-stateful_util.Tpo" "$(DEPDIR)/pre_stage2_exec-stateful_util.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-stateful_util.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stateful_util.c' object='pre_stage2_exec-stateful_util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-stateful_util.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-stateful_util.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-stateful_util.obj `if test -f 'stateful_util.c'; then $(CYGPATH_W) 'stateful_util.c'; else $(CYGPATH_W) '$(srcdir)/stateful_util.c'; fi`
+
 pre_stage2_exec-terminfo.o: terminfo.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-terminfo.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-terminfo.Tpo" \
 @am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-terminfo.o `test -f 'terminfo.c' || echo '$(srcdir)/'`terminfo.c; \
@@ -3691,6 +4040,28 @@ pre_stage2_exec-tparm.obj: tparm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-tparm.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-tparm.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-tparm.obj `if test -f 'tparm.c'; then $(CYGPATH_W) 'tparm.c'; else $(CYGPATH_W) '$(srcdir)/tparm.c'; fi`
+
+pre_stage2_exec-utility.o: utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-utility.o -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-utility.o `test -f 'utility.c' || echo '$(srcdir)/'`utility.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-utility.Tpo" "$(DEPDIR)/pre_stage2_exec-utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utility.c' object='pre_stage2_exec-utility.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-utility.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-utility.o `test -f 'utility.c' || echo '$(srcdir)/'`utility.c
+
+pre_stage2_exec-utility.obj: utility.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -MT pre_stage2_exec-utility.obj -MD -MP -MF "$(DEPDIR)/pre_stage2_exec-utility.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o pre_stage2_exec-utility.obj `if test -f 'utility.c'; then $(CYGPATH_W) 'utility.c'; else $(CYGPATH_W) '$(srcdir)/utility.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pre_stage2_exec-utility.Tpo" "$(DEPDIR)/pre_stage2_exec-utility.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/pre_stage2_exec-utility.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utility.c' object='pre_stage2_exec-utility.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/pre_stage2_exec-utility.Po' tmpdepfile='$(DEPDIR)/pre_stage2_exec-utility.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pre_stage2_exec_CFLAGS) $(CFLAGS) -c -o pre_stage2_exec-utility.obj `if test -f 'utility.c'; then $(CYGPATH_W) 'utility.c'; else $(CYGPATH_W) '$(srcdir)/utility.c'; fi`
 
 reiserfs_stage1_5_exec-common.o: common.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(reiserfs_stage1_5_exec_CFLAGS) $(CFLAGS) -MT reiserfs_stage1_5_exec-common.o -MD -MP -MF "$(DEPDIR)/reiserfs_stage1_5_exec-common.Tpo" \

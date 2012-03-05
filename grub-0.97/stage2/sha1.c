@@ -6,14 +6,16 @@
  * Open Source Project (platorm/system/core.git/libmincrypt/sha.c
  */
 
-#include "sha.h"
+/*#include "sha.h" */
+#include "common.h"
 #define BUFFER_SIZE 4096
+#define RSA1024_SIG_SIZE 128
 /*Enable/Disable the log flag*/
 #define debuglog 0
 /* Some machines lack byteswap.h and endian.h. These have to use the
  * slower code, even if they're little-endian.
  */
-#define UINT64_RSHIFT(v, shiftby) (((uint64_t)(v)) >> (shiftby))
+/*#define UINT64_RSHIFT(v, shiftby) (((uint64_t)(v)) >> (shiftby))*/
 
 #if defined(HAVE_ENDIAN_H) && defined(HAVE_LITTLE_ENDIAN)
 
@@ -289,101 +291,104 @@ uint8_t* SHA1(const uint8_t *data, uint64_t len, uint8_t *digest) {
 /*Main function to calculate the shasum of File*/
 /*Filename -name of file */
 /*shahexresult -store the final result in an unsigned array of size 41 bytes*/
-void hash_calculate(char *filename,uint8_t shahexresult[41]){
-	#if debuglog
+void hash_calculate(char *filename,uint8_t shahexresult[41],uint8_t hashsum[20],uint8_t sig[RSA1024_SIG_SIZE]){
+#if debuglog
 	grub_printf("Enter hash_calculate \n");
 	grub_printf("HASH==>Filename==%s\n",filename);
-	#endif
- 	int fp;
- 	uint8_t buf[BUFFER_SIZE];
- 	uint64_t filesize;
- 	uint64_t bytes=0;
- 	int round=1;
-  uint8_t sha1_result[20];
- 	fp=grub_open(filename);
-  int i=0;
+#endif
+	int fp;
+	uint8_t buf[BUFFER_SIZE];
+	uint64_t filesize;
+	uint64_t bytes=0;
+	int round=1;
+	uint8_t sha1_result[20];
+	fp=grub_open(filename);
+	int i=0;
 	uint64_t leftbytes;
- 	uint8_t *p;
- 	int k=0;
- 	#if debuglog
+	uint8_t *p;
+	int k=0;
+/*	uint8_t sig[RSA1024_SIG_SIZE];*/
+#if debuglog
 	if(!fp)
-  {
-	 printf("Error opening file to calculate sha1\n");
-   printf("fp==%d\n",fp);
-  }
-	#endif
- filesize=filemax;
- #if debuglog
- printf("Hash_filesize==%d\n",filesize);	
- #endif
- SHA1_CTX shacontext;
- SHA1_init(&shacontext);
- bytes=filesize;
- #if debuglog
- printf("Hash__bytes==%d\n",bytes);
- #endif
- grub_memset(sha1_result,0,20);
- while(bytes >=BUFFER_SIZE)
- {
- grub_memset(buf,0,BUFFER_SIZE);
- grub_read(buf,BUFFER_SIZE);
- SHA1_update(&shacontext,buf,BUFFER_SIZE);
- bytes=bytes-BUFFER_SIZE;
- round++;
- } 
- leftbytes=bytes;
- grub_memset(buf,0,BUFFER_SIZE);
- if(leftbytes!=0)
- {
- grub_read(buf,leftbytes);
- SHA1_update(&shacontext,buf,leftbytes);
- }
- p=SHA1_final(&shacontext);
- for(i=0;i<5;i++)
-    {
-     #if debuglog
-		 printf("ctx->state[%d]=%x\n",i,shacontext.state[i]);
-		 #endif
-     sprintf(shahexresult+k,"%x",shacontext.state[i]);
-     k=k+8;
-    }
-	#if debuglog
+	{
+		printf("Error opening file to calculate sha1\n");
+		printf("fp==%d\n",fp);
+	}
+#endif
+	filesize=filemax-RSA1024_SIG_SIZE;
+#if debuglog
+	printf("Hash_filesize==%d\n",filesize);	
+#endif
+	SHA1_CTX shacontext;
+	SHA1_init(&shacontext);
+	bytes=filesize;
+#if debuglog
+	printf("Hash__bytes==%d\n",bytes);
+#endif
+	grub_memset(sha1_result,0,20);
+	while(bytes >=BUFFER_SIZE)
+	{
+		grub_memset(buf,0,BUFFER_SIZE);
+		grub_read(buf,BUFFER_SIZE);
+		SHA1_update(&shacontext,buf,BUFFER_SIZE);
+		bytes=bytes-BUFFER_SIZE;
+		round++;
+	} 
+	leftbytes=bytes;
+	grub_memset(buf,0,BUFFER_SIZE);
+	if(leftbytes!=0)
+	{
+		grub_read(buf,leftbytes);
+		SHA1_update(&shacontext,buf,leftbytes);
+	}
+	p=SHA1_final(&shacontext);
+	grub_strcpy(hashsum,p);	
+	grub_read(sig,RSA1024_SIG_SIZE);
+	for(i=0;i<5;i++)
+	{
+#if debuglog
+		printf("ctx->state[%d]=%x\n",i,shacontext.state[i]);
+#endif
+		sprintf(shahexresult+k,"%x",shacontext.state[i]);
+		k=k+8;
+	}
+#if debuglog
 	printf("securehash==%s\n",shahexresult);
-  #endif
- grub_close();
- return 0;
- }
+#endif
+	grub_close();
+	return 0;
+}
 
 /*Test function to calculate sha1(secure hash) for any buffer */
 /*buf-unsigned char array*/
 void hashbuf_calculate(uint8_t *buf){
- #if debuglog
- printf("Enter hash_calculate \n");
- #endif
- uint64_t filesize;
- uint64_t bytes=0;
- uint8_t sha1_result[20];
- int i=0;
- uint8_t *p;
- /*Size of the buffer */
- filesize=grub_strlen(buf); 
- #if debuglog
- printf("Hash_filesize==%d\n",filesize);	
- #endif
- grub_memset(sha1_result,0,20);
- /*Calculate the hash of a buffer */
- p=SHA1(buf,filesize,sha1_result);
- #if debuglog
- for (i = 0;i<SHA1_DIGEST_SIZE;++i) 
+#if debuglog
+	printf("Enter hash_calculate \n");
+#endif
+	uint64_t filesize;
+	uint64_t bytes=0;
+	uint8_t sha1_result[20];
+	int i=0;
+	uint8_t *p;
+	/*Size of the buffer */
+	filesize=grub_strlen(buf); 
+#if debuglog
+	printf("Hash_filesize==%d\n",filesize);	
+#endif
+	grub_memset(sha1_result,0,20);
+	/*Calculate the hash of a buffer */
+	p=SHA1(buf,filesize,sha1_result);
+#if debuglog
+	for (i = 0;i<SHA1_DIGEST_SIZE;++i) 
 	{
-	 	 printf("sha1_result[%d] ==%x ",i,sha1_result[i]);
-  }
- #endif
- for (i = 0;i<SHA1_DIGEST_SIZE;++i) 
+		printf("sha1_result[%d] ==%x ",i,sha1_result[i]);
+	}
+#endif
+	for (i = 0;i<SHA1_DIGEST_SIZE;++i) 
 	{
-        sha1_result[i] = *p++;
-			  /*Print the hash of buffer*/
-			  printf("HASHDIGESTsha1_result[%d] ==%x ",i,sha1_result[i]);
-  }
- return 0;
- }
+		sha1_result[i] = *p++;
+		/*Print the hash of buffer*/
+		printf("HASHDIGESTsha1_result[%d] ==%x ",i,sha1_result[i]);
+	}
+	return 0;
+}

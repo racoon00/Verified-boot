@@ -20,11 +20,13 @@
 
 
 #include "shared.h"
-#include "sha.h"
+#include "common.h"
 #include "freebsd.h"
 #include "imgact_aout.h"
 #include "i386-elf.h"
-extern void hash_calculate(char *filename,uint8_t sha1_result[]);
+/*extern void hash_calculate(char *filename,uint8_t sha1_result[]);*/
+extern void hash_calculate(char *filename,uint8_t sha1_result[],uint8_t hashbuf[],uint8_t sig[]);
+	
 
 #define SUPPORT_VERIFIED_BOOT 1
 static int cur_addr;
@@ -42,11 +44,15 @@ static int linux_mem_size;
  * Test file can contain multiple hash entry and the file associated with that hash
  */
 int loadcheckfile(char *filename){
-	#if debuglog 
+#if debuglog 
 	printf("Enter loadcheckfile function ===\n");
-	#endif
+#endif
 	char HashValue[41];
 	char checkfile[1024];
+	uint8_t hashbuf[20];
+	uint8_t sig[128];
+	grub_memset(hashbuf,0,20);
+	grub_memset(sig,0,128);
 
 	int fp;
 	int i=0;
@@ -54,103 +60,130 @@ int loadcheckfile(char *filename){
 	fp=grub_open(filename);
 	/*Read tesfile data into input buffer */
 	char buf[8192]; 
-	#if debuglog
+#if debuglog
 	if(!fp)
 	{
-	printf("Error Reading checkfile\n");
+		printf("Error Reading checkfile\n");
 	}
-	#endif
+#endif
 	/*length of the file*/
 	int maxlen=filemax;
-	#if debuglog
+#if debuglog
 	printf("Maxlen==%d\n",maxlen);
-	#endif
+#endif
 	/*read the data into buf*/
 	grub_read(buf,maxlen);
 	/*Close the file*/
 	grub_close();
 	int hashfine;
 	/*Flag for checking whether the hash is fine 
- 	 *till now while reading the data from buf*/
+	 *till now while reading the data from buf*/
 	hashfine=1;
 	int cur=0;
 	while(cur<maxlen)
 	{
-	#if debuglog
-	printf("Enter while loadcheckfile  ===\n");
-	#endif
-	/*Read the first 40 bytes and store it in the hashvalue*/
-	for(i=0;i<40;i++)
-	{
-	HashValue[i]=buf[i];
-	#if debuglog
-	printf("HashValue[%d]==%c\t",i,HashValue[i]);
-	#endif
-	cur++;
-	}
-	HashValue[40]='\0';
-  /*Read the rest i.e checkfile path into checkfile */	
-	//cur++;
-	#if debuglog
-	printf("Buffer[%d]==%c\t",cur,buf[cur]);
-	#endif
-  /*Check for file format */	
-	if(buf[cur]!=' ')
-	{
-	#if debuglog
-	grub_printf("File format not correct\n");
-	#endif
-	return 1;
-	}
-	cur++;
-	i=0;
-	while(1)
-	{
-	if(buf[cur]=='\n')
-	{
-	cur++;
-	checkfile[i]='\0';
-	#if debuglog
-	grub_printf("checkfile==%s\n",checkfile);
-	#endif
-	break;
- 	}
-	checkfile[i]=buf[cur];
-	cur++;
-	i++;
+#if debuglog
+		printf("Enter while loadcheckfile  ===\n");
+#endif
+		/*Read the first 40 bytes and store it in the hashvalue*/
+		for(i=0;i<40;i++)
+		{
+			HashValue[i]=buf[i];
+#if debuglog
+			printf("HashValue[%d]==%c\t",i,HashValue[i]);
+#endif
+			cur++;
+		}
+		HashValue[40]='\0';
+		/*Read the rest i.e checkfile path into checkfile */	
+		//cur++;
+#if debuglog
+		printf("Buffer[%d]==%c\t",cur,buf[cur]);
+#endif
+		/*Check for file format */	
+		if(buf[cur]!=' ')
+		{
+#if debuglog
+			grub_printf("File format not correct\n");
+#endif
+			return 1;
+		}
+		cur++;
+		i=0;
+		while(1)
+		{
+			if(buf[cur]=='\n')
+			{
+				cur++;
+				checkfile[i]='\0';
+#if debuglog
+				grub_printf("checkfile==%s\n",checkfile);
+#endif
+				break;
+			}
+			checkfile[i]=buf[cur];
+			cur++;
+			i++;
 
-	if(i>1023)
-	{
-	#if debuglog
-	grub_printf("Filename too long and terminate here\n");
-	#endif
-  return 1;	
-	}	
+			if(i>1023)
+			{
+#if debuglog
+				grub_printf("Filename too long and terminate here\n");
+#endif
+				return 1;	
+			}	
+		}
+		char shasum[41];
+		/*Calculate the shasum of checkfile and store it in shasum*/
+		hash_calculate(checkfile,shasum,hashbuf,sig);
+#if debuglog
+		printf("shasum of the file==%s\n",shasum);
+#endif
+		if(grub_strcmp(shasum,HashValue)==0)
+		{
+#if debuglog
+			printf("Hash equal continue booting\n");
+#endif
+			hashfine=1;
+		}
+		else
+		{
+#if debuglog
+			printf("Hash Value not equal\n");
+#endif
+			hashfine=0;
+			return 1;
+		}
+		/*continue till the hash is fine */
 	}
-	char shasum[41];
-	/*Calculate the shasum of checkfile and store it in shasum*/
-	hash_calculate(checkfile,shasum);
-  #if debuglog
-	printf("shasum of the file==%s\n",shasum);
-  #endif
-	if(grub_strcmp(shasum,HashValue)==0)
-	{
-	#if debuglog
-	printf("Hash equal continue booting\n");
-	#endif
-	hashfine=1;
-	}
-	else
-	{
-	#if debuglog
-	printf("Hash Value not equal\n");
-	#endif
-	hashfine=0;
-	return 1;
-	}
-/*continue till the hash is fine */
+	return 0;
 }
-return 0;
+
+int verify_kernel(char *kernelpath)
+{
+	uint8_t shahexresult[41];
+	uint8_t hashsum[20];
+	uint8_t sig[128];
+	hash_calculate(kernelpath,shahexresult,hashsum,sig);
+	int fp;
+	fp=grub_open("publickey");
+	uint8_t passbuf[264];
+	RSAPublicKey key;
+	grub_read(passbuf,264);
+	key=RSAPublicKeyFromBuf(passbuf,264);
+	key.algorithm=0;
+	int result=0;
+	uint8_t sig_type=0;
+	uint32_t sig_len=128;
+	result=RSAVerify(key,sig,sig_len,sig_type,hashsum);
+	if(result==0) 
+	{
+		return 1;
+	}
+	else 
+	{
+		return 0;
+	}
 }
 #endif
 /*
